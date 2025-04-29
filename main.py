@@ -66,7 +66,7 @@ def load_data():
     return df
 
 @st.cache_data
-def compute_waterfall(df, variavel='Marca TT', top_n=8):
+def compute_waterfall(df, variavel='Marca TT', top_n=7):
     vol = '[Volume (Hl) Sellout]'
     
     # Filter Jan-Apr data
@@ -99,15 +99,36 @@ def compute_waterfall(df, variavel='Marca TT', top_n=8):
         for b in all_brands:
             vol24 = brands24.get(b, 0)
             vol25 = brands25.get(b, 0)
-            delta_Tb = vol25 - vol24
-            delta_Ab = delta_Tb if b in ambev_brands else 0
-            
-            # Contribution: (ΔAb / T24 - A24 * ΔTb / T24^2) * 100
-            contribution_b = (delta_Ab / tot24 - ambev24 * delta_Tb / (tot24 * tot24)) * 100
+            # Calculate absolute share change for the brand
+            share24 = (vol24 / tot24 * 100) if tot24 > 0 else 0
+            share25 = (vol25 / tot25 * 100) if tot25 > 0 else 0
+            absolute_share_change = share25 - share24
+
+            # Determine contribution based on whether it's an Ambev brand
+            if b in ambev_brands:
+                contribution_b = absolute_share_change # Direct share change for Ambev brands
+            else:
+                contribution_b = -absolute_share_change # Inverse share change for competitors
+
             share_impacts[b] = contribution_b
-    else: # Handle case where initial total volume is zero
+    else: # Handle case where initial total volume is zero or final total volume is zero
          for b in all_brands:
-             share_impacts[b] = 0 # Or handle based on specific logic if needed
+             # If tot24 is 0 but tot25 is not, the change is effectively the new share
+             if tot24 == 0 and tot25 > 0:
+                 share25 = (brands25.get(b, 0) / tot25 * 100)
+                 if b in ambev_brands:
+                     share_impacts[b] = share25
+                 else:
+                     share_impacts[b] = -share25
+             # If tot25 is 0 but tot24 is not, the change is the negative of the old share
+             elif tot25 == 0 and tot24 > 0:
+                 share24 = (brands24.get(b, 0) / tot24 * 100)
+                 if b in ambev_brands:
+                     share_impacts[b] = -share24
+                 else:
+                     share_impacts[b] = share24 # Competitor losing share benefits Ambev
+             else: # Both are zero or some other edge case
+                 share_impacts[b] = 0
 
     # Sort impacts and split into top gains/losses
     sorted_impacts = sorted(share_impacts.items(), key=lambda x: x[1], reverse=True) # Sort by value
