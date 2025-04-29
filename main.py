@@ -58,6 +58,8 @@ def load_data():
 
     # --- Data Transformations (applied after loading) ---
     df['03. Produto Sellout [Marca]'] = df['03. Produto Sellout [Marca]'].replace('BARE TUTTI FRUTTI', 'BARE GUARANA')
+    df['Marca Ajustada'] = df['Marca Ajustada'].replace('BARE TUTTI FRUTTI', 'BARE GUARANA')
+    df['Marca TT'] = df['Marca TT'].replace('BARE TUTTI FRUTTI', 'BARE GUARANA')
     df['nome_produto'] = df['03. Produto Sellout [Marca]'] + ' ' + df['03. Produto Sellout [Tamanho Embalagem]'].astype(str)
     # Add MS/SS classification
     df['MS/SS'] = df['03. Produto Sellout [Tamanho Embalagem]'].apply(lambda x: 'MS' if x >= 1000 else 'SS')
